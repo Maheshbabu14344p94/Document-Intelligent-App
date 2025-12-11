@@ -20,44 +20,62 @@ This README explains how to run the backend, frontend, and MongoDB from scratch 
 
 ## 2) What’s included (high-level file map)
 
-```
 backend/
-  src/
-    config/
-      aiClient.js        # Gemini client wrapper
-      db.js              # Mongo connection
-    controllers/
-      authController.js
-      documentController.js
-      searchController.js
-      historyController.js
-      ingestionController.js
-    services/
-      pdfParser.js
-      embeddingService.js
-      storageService.js
-    models/
-      User.js
-      Document.js
-      Passage.js
-      QueryHistory.js
-    middleware/
-      authMiddleware.js
-      uploadMiddleware.js
-    app.js
-    server.js
-  package.json
-  .env
+ ├── src/
+ │   ├── app.js
+ │   ├── server.js
+ │   ├── config/
+ │   │   ├── db.js
+ │   │   └── aiClient.js
+ │   ├── controllers/
+ │   │   ├── authController.js
+ │   │   ├── documentController.js
+ │   │   ├── searchController.js
+ │   │   ├── userController.js
+ │   │   ├── supportController.js
+ │   │   └── historyController.js
+ │   ├── middleware/
+ │   │   └── auth.js
+ │   ├── models/
+ │   │   ├── User.js
+ │   │   ├── Document.js
+ │   │   └── QueryHistory.js
+ │   ├── routes/
+ │   │   ├── authRoutes.js
+ │   │   ├── documentRoutes.js
+ │   │   ├── searchRoutes.js
+ │   │   ├── historyRoutes.js
+ │   │   └── supportRoutes.js
+ │   ├── services/
+ │   │   ├── pdfParser.js
+ │   │   └── storageService.js
+ │   └── utils/
+ │       └── fileUtils.js
+ ├── uploads/
+ ├── .env
+ └── package.json
+
 
 frontend/
-  src/
-    pages/              # Login, Register, Dashboard, Support, etc.
-    components/         # ChatPanel, Sidebar, PdfPreviewPanel, etc.
-    api.js              # Axios instance
-    main.jsx
-    App.jsx
-    styles.css
-  package.json
+ ├── src/
+ │   ├── pages/
+ │   │   ├── Landing.jsx
+ │   │   ├── Login.jsx
+ │   │   ├── Register.jsx
+ │   │   ├── Dashboard.jsx
+ │   │   └── Support.jsx
+ │   ├── components/
+ │   │   ├── Sidebar.jsx
+ │   │   ├── DocumentCard.jsx
+ │   │   ├── ChatPanel.jsx
+ │   │   └── PdfPreviewPanel.jsx
+ │   ├── api.js
+ │   ├── App.jsx
+ │   ├── main.jsx
+ │   └── styles.css
+ ├── index.html
+ └── package.json
+
 
 uploads/                # Uploaded files (local)
 
@@ -179,6 +197,15 @@ Ensure your IP is allowed for Atlas (Network Access) while testing.
 ---
 
 ## 8) Postman / API smoke tests (examples)
+
+API Endpoints
+/api/auth/signup
+/api/auth/login
+/api/documents/upload
+/api/documents/:id (GET, DELETE)
+/api/search/query
+/api/history
+/api/support
 
 Use Postman (or curl) to verify the backend endpoints.
 
