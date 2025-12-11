@@ -334,12 +334,3 @@ Response: `{ answer, documentsUsed, historyId }` or an error message if LLM/Embe
 3. `cd frontend` → `npm install` → `npm run dev`
 4. Signup & Login → Upload PDF → Ask question
 
----
-
-If you want, I can also:
-
-* Produce a `README.md` file in the repo directly (copy/paste or commit-ready) — say **"create README file"**.
-* Generate a short demo script that you can read while recording your video (with timestamps and talking points).
-* Provide a `docker-compose.yml` for one-command startup (Mongo + backend + frontend) — say **"docker-compose"**.
-
-Good luck — tell me which of the follow-ups you want next (README file committed, demo script, or docker-compose).
