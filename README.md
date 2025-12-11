@@ -1,224 +1,345 @@
-📄 DocuMind Hub – AI Document Intelligence & Knowledge Search
+# DocuMind Hub — Document Intelligence & Knowledge Search
 
-DocuMind Hub is an advanced AI-powered document analysis platform that allows users to upload PDFs, chat with their documents, preview content, and get intelligent responses extracted from files.
-Built using React + Express + MongoDB + Gemini AI, it delivers a modern, fast, and visually appealing experience.
+A complete, full-stack project that lets users upload PDFs, parse them, and ask questions using a generative AI model. Includes a React frontend (Vite), Node.js/Express backend, and MongoDB for persistent storage.
 
-🚀 Features
-🔍 1. Upload & Process PDFs
 
-Upload PDFs through a neon-themed interface
 
-Files are stored in /uploads/ on the backend
+## 1) Project overview
 
-Automatically extracted and processed for AI use
+DocuMind Hub is a document intelligence workspace that:
 
-💬 2. AI Chat With Documents
+* Lets users sign up / log in.
+* Upload PDF documents (stored on disk or S3 if enabled).
+* Extracts text from PDFs and stores it in MongoDB.
+* Optionally creates embeddings (Gemini/Gecko) and runs RAG queries.
+* Provides a chat UI to ask questions against uploaded documents.
 
-Ask questions related to uploaded PDFs
+This README explains how to run the backend, frontend, and MongoDB from scratch and how to test the app locally.
 
-Uses Gemini AI to extract insights, summaries, explanations
+---
 
-Intelligent context-based chat
+## 2) What’s included (high-level file map)
 
-Chat panel fully scrollable and responsive
+```
+backend/
+  src/
+    config/
+      aiClient.js        # Gemini client wrapper
+      db.js              # Mongo connection
+    controllers/
+      authController.js
+      documentController.js
+      searchController.js
+      historyController.js
+      ingestionController.js
+    services/
+      pdfParser.js
+      embeddingService.js
+      storageService.js
+    models/
+      User.js
+      Document.js
+      Passage.js
+      QueryHistory.js
+    middleware/
+      authMiddleware.js
+      uploadMiddleware.js
+    app.js
+    server.js
+  package.json
+  .env
 
-📑 3. PDF Preview Panel
+frontend/
+  src/
+    pages/              # Login, Register, Dashboard, Support, etc.
+    components/         # ChatPanel, Sidebar, PdfPreviewPanel, etc.
+    api.js              # Axios instance
+    main.jsx
+    App.jsx
+    styles.css
+  package.json
 
-View uploaded documents on the right side
+uploads/                # Uploaded files (local)
 
-Auto-updates when selecting different files
+```
 
-Smooth and fast iframe-based preview
+---
 
-📚 4. Source Management
+## 3) Prerequisites
 
-Select multiple sources for AI to read
+Install the following on your machine:
 
-Delete documents
+* Node.js (recommended v18+ / tested with v22)
+* npm (comes with Node) or yarn
+* MongoDB (local or a hosted MongoDB Atlas cluster)
+* (Optional) Google Cloud / Generative AI API key if you want embeddings/LLM answers
 
-Displays file status, timestamp, and metadata
+---
 
-🧭 5. Support Page (New)
+## 4) Environment variables (.env)
 
-Includes a full customer support form:
+Create a `.env` file in `backend/` with the following keys (example):
 
-Name
-
-Email
-
-Message
-
-Sends the request to backend route /support
-
-Redirects back to dashboard after submission
-
-🎨 6. Modern Neon UI
-
-Full dark neon gradient background
-
-Glassmorphism panels
-
-Floating glow effects
-
-Smooth animations
-
-🛠️ Tech Stack
-Frontend
-
-React (Vite / JSX)
-
-React Router
-
-Axios
-
-Custom neon CSS UI
-
-Backend
-
-Node.js + Express
-
-MongoDB + Mongoose
-
-Multer for PDF uploads
-
-Gemini AI SDK (Gemini 2.5 Flash Model)
-
-📁 Project Structure
-document-intelligence-app/
-│
-├── backend/
-│   ├── src/
-│   │   ├── config/
-│   │   ├── controllers/
-│   │   ├── middleware/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── services/
-│   │   ├── utils/
-│   │   ├── app.js
-│   │   └── server.js
-│   ├── uploads/       <-- PDF files stored here
-│   ├── .env
-│   └── package.json
-│
-└── frontend/
-    ├── src/
-    │   ├── pages/
-    │   ├── components/
-    │   ├── App.jsx
-    │   ├── main.jsx
-    │   └── styles.css
-    ├── public/
-    ├── index.html
-    └── package.json
-
-⚙️ Environment Variables
-
-Create backend/.env:
-
-MONGO_URI=your_mongodb_connection_string
+```
+# Server
 PORT=4000
-GEMINI_API_KEY=your_gemini_api_key
-LLM_MODEL=gemini-2.5-flash
+MONGO_URI=mongodb://localhost:27017/document_intel
+JWT_SECRET=supersecretjwtkey
 
-🔧 Installation & Setup
-1️⃣ Clone the repo
-git clone https://github.com/yourusername/document-intelligence-app.git
-cd document-intelligence-app
+# Gemini / Generative AI (optional)
+GEMINI_API_KEY=your_google_api_key_here
+LLM_MODEL=gemini-2.5-flash        # or whichever model your key permits
+EMBED_MODEL=models/embedding-gecko-001
 
-2️⃣ Install Backend
-cd backend
-npm install
-npm run dev
+# Storage
+STORAGE_DIR=./uploads
+USE_S3=false
 
+# Chunking
+MAX_CHUNK_CHARS=1000
+```
 
-The server runs at:
+Notes:
 
-http://localhost:4000
+* If you don’t want to use Google Generative API (Gemini) or billing, you can leave `GEMINI_API_KEY` empty — the system will still parse PDFs and store text in MongoDB; however **LLM answers and embeddings will not work**.
+* If you use Google APIs, **billing is required** for embeddings and some models; free-tier quotas are limited.
 
-3️⃣ Install Frontend
-cd ../frontend
-npm install
-npm run dev
+---
 
+## 5) Backend — install & run (step-by-step)
 
-The app runs at:
+Open a terminal and run:
 
-http://localhost:5173
+1. `cd backend`
 
-🧪 API Endpoints
-Authentication
-Method	Endpoint	Description
-POST	/api/auth/signup	Register user
-POST	/api/auth/login	Login user
-Documents
-Method	Endpoint	Description
-POST	/api/documents/upload	Upload PDF
-GET	/api/documents	Get all documents
-DELETE	/api/documents/:id	Delete one document
-Search / AI
-Method	Endpoint	Description
-POST	/api/search/query	Ask question to AI
-Support
-Method	Endpoint	Description
-POST	/support	Submit support message
-🎯 Usage Flow
+2. Install dependencies:
 
-Login / Sign up
+   ```bash
+   npm install
+   ```
 
-Upload one or more PDFs
+3. Create `.env` (see Section 4).
 
-Select the file(s)
+4. Start MongoDB if not running. For local default install:
 
-Ask questions in chat
+   * macOS / Linux: `sudo service mongod start` (or `brew services start mongodb-community`)
+   * Windows (with installed MongoDB): start the MongoDB service from Services or run `mongod`.
 
-See AI results instantly
+5. Run the backend in development mode (nodemon):
 
-View the PDF in preview panel
+   ```bash
+   npm run dev
+   ```
 
-Visit Support page for help
+6. You should see (sample):
 
-🎨 UI Features
+   * `✅ MongoDB connected`
+   * `🚀 Backend running on http://localhost:4000`
 
-Floating animated neon blobs
+If the server crashes with `EADDRINUSE` (port in use):
 
-Soft glassmorphism panels
+* Find the process using the port and stop it.
 
-Fully responsive layout
+  * On Windows PowerShell: `Get-NetTCPConnection -LocalPort 4000 | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force }`
+  * On macOS / Linux: `lsof -i :4000` then `kill -9 <PID>`
 
-Smooth scrolling in chat
+---
 
-Highlight effects on hover
+## 6) Frontend — install & run (step-by-step)
 
-Beautiful gradients
+1. `cd frontend`
 
-🔐 Security
+2. Install dependencies:
 
-JWT authentication
+   ```bash
+   npm install
+   ```
 
-Protected routes
+   Ensure `axios`, `react`, `react-router-dom`, and `vite` are present in `package.json`.
 
-Sanitized file uploads
+3. Start frontend dev server:
 
-CORS enabled
+   ```bash
+   npm run dev
+   ```
 
-🧹 Future Enhancements
+4. Open the app in the browser at `http://localhost:5173/` (Vite default). If you changed the port, use the one printed by Vite.
 
-Multi-page PDF extraction
+---
 
-AI-based document classification
+## 7) MongoDB setup
 
-History of chats
+* Local: default `mongodb://localhost:27017` works with the instructions.
+* Atlas: create a free cluster and use the provided connection string as `MONGO_URI`.
 
-Admin dashboard
+  * Replace `<username>`, `<password>`, and `<dbname>` in the connection string.
 
-Email notifications for support requests
+Ensure your IP is allowed for Atlas (Network Access) while testing.
 
-🤝 Contributing
+---
 
-Pull requests are welcome!
-Feel free to open issues or suggest improvements.
+## 8) Postman / API smoke tests (examples)
 
-📜 License
+Use Postman (or curl) to verify the backend endpoints.
 
-MIT License © 2025
+### 1) Signup
+
+POST `http://localhost:4000/api/auth/signup`
+
+Body (JSON):
+
+```json
+{
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "password123"
+}
+```
+
+Response: `token` and `user` object.
+
+---
+
+### 2) Login
+
+POST `http://localhost:4000/api/auth/login`
+
+Body (JSON):
+
+```json
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+```
+
+Response: `{ token, user }` — copy the token.
+
+Add header for protected endpoints:
+
+```
+Authorization: Bearer <token>
+```
+
+---
+
+### 3) Upload a PDF
+
+POST `http://localhost:4000/api/documents/upload`
+
+* Use form-data
+
+  * Key: `file` (type: File) → choose a `.pdf`
+* Include the Authorization header.
+
+Response: Document object (status `uploaded` or `processed`).
+
+---
+
+### 4) List documents
+
+GET `http://localhost:4000/api/documents` (Auth required)
+
+---
+
+### 5) Query (RAG)
+
+POST `http://localhost:4000/api/search/query` (Auth required)
+
+Body (JSON):
+
+```json
+{
+  "question": "What is the exam date mentioned in the hall ticket?",
+  "documentIds": ["<optional document id array>"]
+}
+```
+
+Response: `{ answer, documentsUsed, historyId }` or an error message if LLM/Embeddings are not configured.
+
+---
+
+## 9) Common issues & troubleshooting
+
+**1. API key invalid / 400 error**
+
+* Ensure `GEMINI_API_KEY` is correct. Use the API key from Google Cloud (API & Services → API Keys). For embeddings and some models, billing **must** be enabled.
+* If you don’t want billing, keep `GEMINI_API_KEY` empty — the app will still store and preview PDFs but not generate AI answers.
+
+**2. 404: model not found**
+
+* The model name in `.env` may be incorrect or unsupported for your API version. Example valid names change over time; check Google’s `ListModels` or their docs.
+* Try using a known-working model or remove custom `LLM_MODEL` to let the code fallback.
+
+**3. 429 Too Many Requests / Quota**
+
+* Free-tier quotas may be zero for some accounts. This can be solved by enabling billing or switching to a model with available quota.
+
+**4. EADDRINUSE (port 4000 in use)**
+
+* Kill the process using the port (see Section 5).
+
+**5. PDF not previewing (404 on /uploads/FILE.pdf)**
+
+* Confirm that `STORAGE_DIR` matches where multer saved uploaded files (default `./uploads` in backend root) and that `app.use('/uploads', express.static(...))` path points to that folder.
+
+**6. CORS problems**
+
+* The backend uses `cors()` by default. If you get CORS errors, ensure frontend origin ([http://localhost:5173](http://localhost:5173)) is not blocked, or add `app.use(cors({ origin: 'http://localhost:5173' }))`.
+
+---
+
+## 10) Security notes
+
+* **Do not commit** `.env` to source control. `.env` contains secrets.
+* Use strong `JWT_SECRET` in production.
+* Validate uploaded files and sanitize all inputs before enabling public access.
+
+---
+
+## 11) Known limitations & assumptions
+
+(Concise list — use this when demonstrating live)
+
+* Gemini/embedding usage depends on API key + billing / quotas.
+* PDF extraction is best for text-based PDFs. Scanned images need OCR (not included).
+* No collaborative editing or advanced PDF search in this version.
+* Supports only PDF uploads by default.
+
+(Full details available in the project documentation.)
+
+---
+
+## 12) Future extensions
+
+* Add OCR for scanned PDFs (Tesseract or Google Vision).
+* Add document highlights & keyword search inside the PDF viewer.
+* Support DOCX/PPTX/TXT upload.
+* Add admin UI for support tickets.
+* Implement image generation & other response formats in the "Forms" feature.
+
+---
+
+## 13) Contact / credits
+
+* Built by: Maheshbabu (example)
+* Core libraries: Express, Mongoose, React, Vite, @google/generative-ai
+
+---
+
+### Quick checklist (run-before-demo)
+
+1. Start MongoDB
+2. `cd backend` → `npm install` → `.env` → `npm run dev`
+3. `cd frontend` → `npm install` → `npm run dev`
+4. Signup & Login → Upload PDF → Ask question
+
+---
+
+If you want, I can also:
+
+* Produce a `README.md` file in the repo directly (copy/paste or commit-ready) — say **"create README file"**.
+* Generate a short demo script that you can read while recording your video (with timestamps and talking points).
+* Provide a `docker-compose.yml` for one-command startup (Mongo + backend + frontend) — say **"docker-compose"**.
+
+Good luck — tell me which of the follow-ups you want next (README file committed, demo script, or docker-compose).
